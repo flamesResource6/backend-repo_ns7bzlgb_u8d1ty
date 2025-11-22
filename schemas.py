@@ -1,48 +1,62 @@
 """
-Database Schemas
+Database Schemas for Shopearn Pro
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Each Pydantic model corresponds to a MongoDB collection. The collection name is the lowercase of the class name.
 """
-
-from pydantic import BaseModel, Field
-from typing import Optional
-
-# Example schemas (replace with your own):
+from __future__ import annotations
+from typing import List, Optional, Dict, Any
+from pydantic import BaseModel, Field, HttpUrl
+from datetime import datetime
 
 class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+    role: str = Field(..., description="buyer | affiliate | admin")
+    name: str
+    email: str
+    password_hash: str
+    phone: Optional[str] = None
+    photo_url: Optional[str] = None
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    is_active: bool = True
+    ad_free: bool = False
+    subscription_expiry: Optional[datetime] = None
 
 class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+    affiliate_id: str = Field(..., description="Owner affiliate user id")
+    images: List[str] = Field(default_factory=list)
+    title: str
+    description: Optional[str] = None
+    price: float
+    vendor: str = Field(..., description="amazon|flipkart|meesho|shopify|myntra|ajio|alibaba|snapdeal")
+    category: Optional[str] = None
+    tags: List[str] = Field(default_factory=list)
+    rating: Optional[float] = Field(default=None, ge=0, le=5)
+    hot_deal: bool = False
+    hot_deal_expiry: Optional[datetime] = None
+    featured: bool = False
+    clicks: int = 0
+    orders: int = 0
+    affiliate_link: Optional[str] = None
 
-# Add your own schemas here:
-# --------------------------------------------------
+class Order(BaseModel):
+    user_id: str
+    product_id: str
+    affiliate_id: str
+    status: str = Field(default="Redirected")
+    vendor_url: Optional[str] = None
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class Click(BaseModel):
+    type: str = Field(..., description="logo|product")
+    user_id: Optional[str] = None
+    product_id: Optional[str] = None
+    affiliate_id: Optional[str] = None
+    ip: Optional[str] = None
+    meta: Dict[str, Any] = Field(default_factory=dict)
+
+class AdminSettings(BaseModel):
+    links: Dict[str, str] = Field(default_factory=dict, description="platform -> affiliate url")
+
+class AdminAuditLog(BaseModel):
+    admin_id: str
+    action: str
+    details: Dict[str, Any] = Field(default_factory=dict)
